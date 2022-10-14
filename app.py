@@ -24,6 +24,11 @@ from tts import load_TTS, synthesize
 DATA_DIR = Path("./data")
 DATA_DIR.mkdir(exist_ok=True, parents=True)
 
+@st.experimental_singleton(show_spinner=False)
+def call_load_TTS():
+    tts = load_TTS()
+    return tts
+
 def main():
     st.header("Text-to-Speech app with streamlit")
     st.markdown(
@@ -34,7 +39,7 @@ This app only process Korean.
     )
 
     with st.spinner(text="Wait for loading TTS model..."):
-        tts = load_TTS()
+        tts = call_load_TTS()
 
     target_text = st.text_input("Write a text to synthesize.(Must be Korean)")
 
