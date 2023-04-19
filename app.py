@@ -18,44 +18,46 @@ import streamlit as st
 
 from pathlib import Path
 
-from tts import load_TTS, synthesize
+from tts_onnx import load_tts_onnx, synthesize, load_tts_onnx_all
+#from tts import load_TTS, synthesize, load_TTS_all
 
 # Setting directory
 DATA_DIR = Path("./data")
 DATA_DIR.mkdir(exist_ok=True, parents=True)
 
-@st.experimental_singleton(show_spinner=False)
+@st.cache_resource
 def call_load_TTS():
-    tts = load_TTS()
-    return tts
+    tts_dict = load_tts_onnx_all()
+    return tts_dict
 
 def main():
     st.header("Text-to-Speech app with streamlit")
     st.markdown(
         """
-This TTS web app is using JETS model trained by kss dataset.
 This app only process Korean.
         """
     )
 
     with st.spinner(text="Wait for loading TTS model..."):
-        tts = call_load_TTS()
+        tts_dict = call_load_TTS()
 
     target_text = st.text_input("Write a text to synthesize.(Must be Korean)")
 
     if target_text != "":
-        with st.spinner(text="Wait for synthesize..."):
-            synthesized_audio = synthesize(tts, target_text)
+        for key, tts in tts_dict.items():
+            with st.spinner(text="Wait for synthesize..."):
+                synthesized_audio = synthesize(tts, target_text)
 
-        # Save audio
-        num_files = len(sorted(DATA_DIR.iterdir()))
-        wav_file = DATA_DIR / (str(num_files) + '.wav')
-        sf.write(wav_file, synthesized_audio.numpy(), 22050, "PCM_16")
+            # Save audio
+            num_files = len(sorted(DATA_DIR.iterdir()))
+            wav_file = DATA_DIR / (str(num_files) + '.wav')
+            sf.write(wav_file, synthesized_audio, 24000, "PCM_16")
 
-        with open(wav_file, 'rb') as f:
-            audio_bytes = f.read()
+            with open(wav_file, 'rb') as f:
+                audio_bytes = f.read()
         
-        st.audio(audio_bytes, format="audio/ogg")
+            st.header(key)
+            st.audio(audio_bytes, format="audio/wav")
 
 if __name__ == "__main__":
     # Setting logging
